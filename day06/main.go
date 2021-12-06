@@ -71,16 +71,11 @@ func (t optimizedFishTimers) tickN(n int) optimizedFishTimers {
 
 func (t optimizedFishTimers) tick() optimizedFishTimers {
 	var newTimers [9]int
-	newCount := 0
-	for i := 0; i < len(t); i++ {
-		newIndex := i - 1
-		if newIndex < 0 {
-			newIndex = 6
-			newCount += t[i]
-		}
-		newTimers[newIndex] += t[i]
+	for i := 1; i < len(t); i++ {
+		newTimers[i-1] += t[i]
 	}
-	newTimers[8] = newCount
+	newTimers[6] += t[0]
+	newTimers[8] = t[0]
 	return newTimers
 }
 
