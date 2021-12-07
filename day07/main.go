@@ -58,10 +58,7 @@ func exponentialCost(positions []int, to int) uint {
 		if steps < 0 {
 			steps *= -1
 		}
-		cost := 0
-		for i := 1; i <= steps; i++ {
-			cost += i
-		}
+		cost := steps * (steps + 1) / 2
 		totalCost += uint(cost)
 	}
 	return totalCost
