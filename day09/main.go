@@ -12,8 +12,8 @@ func main() {
 	splitInput := utils.SplitInput("day09/input.txt")
 	heightMap := parseHeightMap(splitInput)
 	lowPoints := heightMap.lowPoints()
-	fmt.Println(heightMap.largestBasins(lowPoints))
-	// fmt.Println(heightMap.lowPoints().risk())
+	fmt.Printf("Task 1. The risk of the low points is %d\n", heightMap.risk(lowPoints))
+	fmt.Printf("Task 2. The product of the three largest basins is %d\n", heightMap.largestBasins(lowPoints))
 }
 
 type heightMap [][]int
@@ -36,9 +36,8 @@ func parseHeightMap(lines []string) heightMap {
 func (m heightMap) lowPoints() []coord {
 	var lowPoints []coord
 	for y, row := range m {
-		for x, height := range row {
+		for x := range row {
 			if m.lowerThanNeighbors(y, x) {
-				fmt.Printf("Point %d %d is low, height %d\n", x, y, height)
 				lowPoints = append(lowPoints, coord{y: y, x: x})
 			}
 		}
