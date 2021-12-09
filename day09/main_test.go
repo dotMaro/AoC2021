@@ -24,7 +24,7 @@ func Test_heightMap_risk(t *testing.T) {
 func Test_heightMap_largestBaisins(t *testing.T) {
 	heightMap := parseHeightMap(utils.SplitLine(input))
 	coords := heightMap.lowPoints()
-	res := heightMap.largestBaisins(coords)
+	res := heightMap.largestBasins(coords)
 	if res != 1134 {
 		t.Errorf("Should return 1134, but returned %d", res)
 	}

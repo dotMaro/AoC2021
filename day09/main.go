@@ -12,7 +12,7 @@ func main() {
 	splitInput := utils.SplitInput("day09/input.txt")
 	heightMap := parseHeightMap(splitInput)
 	lowPoints := heightMap.lowPoints()
-	fmt.Println(heightMap.largestBaisins(lowPoints))
+	fmt.Println(heightMap.largestBasins(lowPoints))
 	// fmt.Println(heightMap.lowPoints().risk())
 }
 
@@ -82,21 +82,21 @@ func (m heightMap) lowerThanNeighbors(y, x int) bool {
 	return true
 }
 
-func (m heightMap) largestBaisins(points []coord) int {
-	baisins := make([]int, len(points))
+func (m heightMap) largestBasins(points []coord) int {
+	basins := make([]int, len(points))
 	for i, p := range points {
-		baisins[i] = m.baisin(p.y, p.x)
+		basins[i] = m.basin(p.y, p.x)
 	}
-	sort.Ints(baisins)
-	len := len(baisins)
-	return baisins[len-1] * baisins[len-2] * baisins[len-3]
+	sort.Ints(basins)
+	len := len(basins)
+	return basins[len-1] * basins[len-2] * basins[len-3]
 }
 
-func (m heightMap) baisin(y, x int) int {
-	return m.baisinTraverse(y, x, make(map[coord]struct{}))
+func (m heightMap) basin(y, x int) int {
+	return m.basinTraverse(y, x, make(map[coord]struct{}))
 }
 
-func (m heightMap) baisinTraverse(y, x int, alreadyVisited map[coord]struct{}) int {
+func (m heightMap) basinTraverse(y, x int, alreadyVisited map[coord]struct{}) int {
 	if y < 0 || y >= len(m) || x < 0 || x >= len(m[y]) {
 		// Coords out of bounds.
 		return 0
@@ -109,6 +109,6 @@ func (m heightMap) baisinTraverse(y, x int, alreadyVisited map[coord]struct{}) i
 		return 0
 	}
 	alreadyVisited[coord] = struct{}{}
-	return 1 + m.baisinTraverse(y-1, x, alreadyVisited) + m.baisinTraverse(y+1, x, alreadyVisited) +
-		m.baisinTraverse(y, x-1, alreadyVisited) + m.baisinTraverse(y, x+1, alreadyVisited)
+	return 1 + m.basinTraverse(y-1, x, alreadyVisited) + m.basinTraverse(y+1, x, alreadyVisited) +
+		m.basinTraverse(y, x-1, alreadyVisited) + m.basinTraverse(y, x+1, alreadyVisited)
 }
