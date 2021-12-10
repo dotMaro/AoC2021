@@ -16,7 +16,7 @@ func main() {
 func firstErrorSum(lines []string) int {
 	sum := 0
 	for _, line := range lines {
-		error, _ := firstError(line)
+		error, _ := parseUntilFirstError(line)
 		sum += error
 	}
 	return sum
@@ -25,7 +25,7 @@ func firstErrorSum(lines []string) int {
 func corruptedLinesMiddleScore(lines []string) int {
 	var scores []int
 	for _, line := range lines {
-		error, closing := firstError(line)
+		error, closing := parseUntilFirstError(line)
 		if error == 0 {
 			score := 0
 			// Reverse closing.
@@ -52,62 +52,33 @@ func corruptedLinesMiddleScore(lines []string) int {
 	return scores[(len(scores)-1)/2]
 }
 
-func firstError(s string) (int, []rune) {
-	paranthesesCount := 0
-	bracketCount := 0
-	curledCount := 0
-	angleCount := 0
+// parseUntilFirstError and return the error score along with the remaining expected closing brackets.
+// If the score is returned as 0 then no corruption was encountered but there will still always be a
+// non-empty expected closing brackets slice returned.
+func parseUntilFirstError(s string) (int, []rune) {
+	matchingClosing := map[rune]rune{
+		'(': ')',
+		'[': ']',
+		'{': '}',
+		'<': '>',
+	}
+	errorScore := map[rune]int{
+		')': 3,
+		']': 57,
+		'}': 1197,
+		'>': 25137,
+	}
 	var expClosing []rune
 	for _, r := range s {
-		switch r {
-		case '(':
-			paranthesesCount++
-			expClosing = append(expClosing, ')')
-		case ')':
-			if expClosing[len(expClosing)-1] != r {
-				return 3, expClosing
-			}
+		if closing, hasMatchingClosing := matchingClosing[r]; hasMatchingClosing {
+			// r is an opening bracket.
+			expClosing = append(expClosing, closing)
+		} else if expClosing[len(expClosing)-1] != r {
+			// r is an unexpected closing bracket.
+			return errorScore[r], expClosing
+		} else {
+			// r is an expected closing bracket, pop the stack.
 			expClosing = expClosing[:len(expClosing)-1]
-			paranthesesCount--
-			if paranthesesCount < 0 {
-				return 3, expClosing
-			}
-		case '[':
-			bracketCount++
-			expClosing = append(expClosing, ']')
-		case ']':
-			if expClosing[len(expClosing)-1] != r {
-				return 57, expClosing
-			}
-			expClosing = expClosing[:len(expClosing)-1]
-			bracketCount--
-			if bracketCount < 0 {
-				return 57, expClosing
-			}
-		case '{':
-			curledCount++
-			expClosing = append(expClosing, '}')
-		case '}':
-			if expClosing[len(expClosing)-1] != r {
-				return 1197, expClosing
-			}
-			expClosing = expClosing[:len(expClosing)-1]
-			curledCount--
-			if curledCount < 0 {
-				return 1197, expClosing
-			}
-		case '<':
-			angleCount++
-			expClosing = append(expClosing, '>')
-		case '>':
-			if expClosing[len(expClosing)-1] != r {
-				return 25137, expClosing
-			}
-			expClosing = expClosing[:len(expClosing)-1]
-			angleCount--
-			if angleCount < 0 {
-				return 25137, expClosing
-			}
 		}
 	}
 	return 0, expClosing
