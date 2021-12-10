@@ -53,7 +53,7 @@ func corruptedLinesMiddleScore(lines []string) int {
 }
 
 // parseUntilFirstError and return the error score along with the remaining expected closing brackets.
-// If the score is returned as 0 then no corruption was encountered but there will still always be a
+// If the score is returned as 0 then no corruption was encountered but there will always be a
 // non-empty expected closing brackets slice returned.
 func parseUntilFirstError(s string) (int, []rune) {
 	matchingClosing := map[rune]rune{
