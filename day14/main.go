@@ -9,7 +9,9 @@ import (
 
 func main() {
 	input := utils.InputString("day14/input.txt")
-	fmt.Println(parsePolymerFormula(input).stepN(40).mostCommonElementSubtractedWithLeastCommon())
+	formula := parsePolymerFormula(input)
+	fmt.Printf("Task 1. After 10 steps the most common element subtracted with the least common is %d\n", formula.stepN(10).mostCommonElementSubtractedWithLeastCommon())
+	fmt.Printf("Task 2. After 40 steps the most common element subtracted with the least common is %d\n", formula.stepN(40).mostCommonElementSubtractedWithLeastCommon())
 }
 
 type polymerFormula struct {
