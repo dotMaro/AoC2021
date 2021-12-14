@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/dotMaro/AoC2021/utils"
@@ -10,157 +9,149 @@ import (
 
 func main() {
 	input := utils.InputString("day12/input.txt")
-	grid := parseGrid(input)
-	fmt.Printf("Task 1. There are %d points after doing the first fold\n", grid.firstFold().pointsCount())
-	fmt.Printf("Task 2. The resulting points look like:\n%s\n", grid.foldAll().GridString(39, 6))
+	caves := parse(input)
+	fmt.Printf("Part 1. There are %d unique paths\n", findPathCount(caves))
+	fmt.Printf("Part 2. There are %d unique paths when you can visit one small cave twice\n", findPathCountVisitOneSmallCaveTwice(caves))
 }
 
-func parseGrid(s string) grid {
-	lines := utils.SplitLine(s)
-	points := make([]point, 0, len(lines))
-	var folds []fold
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "fold along ") {
-			value, _ := strconv.Atoi(line[13:])
-			fold := fold{
-				axis:  toAxis(rune(line[11])),
-				value: value,
-			}
-			folds = append(folds, fold)
-			continue
-		}
-		coords := strings.SplitN(line, ",", 2)
-		x, _ := strconv.Atoi(coords[0])
-		y, _ := strconv.Atoi(coords[1])
-		points = append(points, point{
-			x: x,
-			y: y,
-		})
-	}
-
-	return grid{
-		points: points,
-		folds:  folds,
-	}
+type cave struct {
+	name        string
+	large       bool
+	connections []string
 }
 
-type grid struct {
-	points []point
-	folds  []fold
-}
-
-type point struct {
-	x, y int
-}
-
-func (p point) shouldFold(f fold) (onFold, shouldFold bool) {
-	switch f.axis {
-	case xAxis:
-		return p.x == f.value, p.x >= f.value
-	case yAxis:
-		return p.y == f.value, p.y >= f.value
-	}
-	return false, false
-}
-
-func (p point) fold(f fold) point {
-	switch f.axis {
-	case xAxis:
-		diff := p.x - f.value
-		p.x -= diff * 2
-	case yAxis:
-		diff := p.y - f.value
-		p.y -= diff * 2
-	}
-	return p
-}
-
-type fold struct {
-	axis  axis
-	value int
-}
-
-type axis rune
-
-const (
-	xAxis axis = 'x'
-	yAxis axis = 'y'
-)
-
-func toAxis(r rune) axis {
-	var axis axis
-	switch r {
-	case 'x':
-		axis = xAxis
-	case 'y':
-		axis = yAxis
-	}
-	return axis
-}
-
-func (g grid) foldAll() grid {
-	for _, fold := range g.folds {
-		g = g.fold(fold)
-	}
-	return g
-}
-
-func (g grid) firstFold() grid {
-	return g.fold(g.folds[0])
-}
-
-func (g grid) fold(fold fold) grid {
-	var newPoints []point
-	addedPoints := make(map[point]struct{})
-	addIfNoOverlap := func(p point) {
-		if _, overlap := addedPoints[p]; !overlap {
-			addedPoints[p] = struct{}{}
-			newPoints = append(newPoints, p)
-		}
-	}
-	for _, p := range g.points {
-		onFold, shouldFold := p.shouldFold(fold)
-		if !onFold {
-			if shouldFold {
-				newPoint := p.fold(fold)
-				addIfNoOverlap(newPoint)
-			} else {
-				addIfNoOverlap(p)
-			}
-		}
-	}
-	return grid{
-		points: newPoints,
-		folds:  g.folds,
-	}
-}
-
-func (g grid) pointsCount() int {
-	return len(g.points)
-}
-
-func (g grid) GridString(x, y int) string {
+func (c cave) String() string {
 	var b strings.Builder
-	b.WriteRune('\n')
-	for curY := 0; curY < y; curY++ {
-		for curX := 0; curX < x; curX++ {
-			hasPoint := false
-			for _, p := range g.points {
-				if p.x == curX && p.y == curY {
-					hasPoint = true
-					break
-				}
-			}
-			if hasPoint {
-				b.WriteRune('#')
-			} else {
-				b.WriteRune('.')
+	for i, name := range c.connections {
+		b.WriteString(name)
+		if i < len(c.connections)-1 {
+			b.WriteRune(',')
+		}
+	}
+	return fmt.Sprintf("%s->%v", c.name, b.String())
+}
+
+func parse(s string) []cave {
+	var caves []cave
+	for _, line := range utils.SplitLine(s) {
+		names := strings.SplitN(line, "-", 2)
+		var start, end *cave
+		var startIndex, endIndex int
+		for i, c := range caves {
+			switch c.name {
+			case names[0]:
+				start = &c
+				startIndex = i
+			case names[1]:
+				end = &c
+				endIndex = i
 			}
 		}
-		b.WriteRune('\n')
+		if start == nil {
+			start = &cave{
+				name:        names[0],
+				large:       names[0] == strings.ToUpper(names[0]),
+				connections: []string{names[1]},
+			}
+			caves = append(caves, *start)
+		} else {
+			caves[startIndex].connections = append(caves[startIndex].connections, names[1])
+		}
+		if end == nil {
+			end = &cave{
+				name:        names[1],
+				large:       names[1] == strings.ToUpper(names[1]),
+				connections: []string{names[0]},
+			}
+			caves = append(caves, *end)
+		} else {
+			caves[endIndex].connections = append(caves[endIndex].connections, names[0])
+		}
 	}
-	return b.String()
+	return caves
+}
+
+func findPathCount(caves []cave) int {
+	var start, end cave
+	for _, c := range caves {
+		switch c.name {
+		case "start":
+			start = c
+		case "end":
+			end = c
+		}
+	}
+	return traverse(caves, make(map[string]struct{}), start, end)
+}
+
+func traverse(caves []cave, alreadyTraversedMap map[string]struct{}, current, end cave) int {
+	if !current.large {
+		alreadyTraversedMap[current.name] = struct{}{}
+	}
+	if current.name == end.name {
+		return 1
+	}
+	pathCount := 0
+	for _, name := range current.connections {
+		var c cave
+		for _, c = range caves {
+			if c.name == name {
+				break
+			}
+		}
+		_, alreadyTraversed := alreadyTraversedMap[c.name]
+		if c.large || !alreadyTraversed {
+			newMap := make(map[string]struct{})
+			for k, v := range alreadyTraversedMap {
+				newMap[k] = v
+			}
+			pathCount += traverse(caves, newMap, c, end)
+		}
+	}
+	return pathCount
+}
+
+func findPathCountVisitOneSmallCaveTwice(caves []cave) int {
+	var start, end cave
+	for _, c := range caves {
+		switch c.name {
+		case "start":
+			start = c
+		case "end":
+			end = c
+		}
+	}
+	traverseMap := make(map[string]uint8)
+	traverseMap["start"] = 2
+	return traverseVisitOneSmallCaveTwice(caves, traverseMap, start, end, false)
+}
+
+func traverseVisitOneSmallCaveTwice(caves []cave, alreadyTraversedMap map[string]uint8, current, end cave, hasTraversedTwice bool) int {
+	if !current.large {
+		alreadyTraversedMap[current.name] = alreadyTraversedMap[current.name] + 1
+		if alreadyTraversedMap[current.name] == 2 {
+			hasTraversedTwice = true
+		}
+	}
+	if current.name == end.name {
+		return 1
+	}
+	pathCount := 0
+	for _, name := range current.connections {
+		var c cave
+		for _, c = range caves {
+			if c.name == name {
+				break
+			}
+		}
+		traverseCount := alreadyTraversedMap[c.name]
+		if c.large || !hasTraversedTwice && traverseCount < 2 || hasTraversedTwice && traverseCount < 1 {
+			copiedMap := make(map[string]uint8)
+			for k, v := range alreadyTraversedMap {
+				copiedMap[k] = v
+			}
+			pathCount += traverseVisitOneSmallCaveTwice(caves, copiedMap, c, end, hasTraversedTwice)
+		}
+	}
+	return pathCount
 }
