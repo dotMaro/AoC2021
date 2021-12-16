@@ -29,6 +29,14 @@ func Test_riskMap_dijkstras(t *testing.T) {
 	}
 }
 
+func Test_riskMap_dijkstrasPriority(t *testing.T) {
+	riskMap := parseRiskMap(input)
+	res := riskMap.dijkstrasPriority()
+	if res != 40 {
+		t.Errorf("Should return 40, not %d", res)
+	}
+}
+
 // func Test_riskMap_extend(t *testing.T) {
 // 	riskMap := parseRiskMap(input)
 // 	extended := riskMap.extend()

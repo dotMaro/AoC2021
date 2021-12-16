@@ -12,7 +12,7 @@ import (
 func main() {
 	input := utils.InputString("day15/input.txt")
 	riskMap := parseRiskMap(input)
-	fmt.Println(riskMap.extend().dijkstrasPriority())
+	fmt.Println(riskMap.extend().dijkstras())
 }
 
 const (
@@ -48,7 +48,10 @@ func (r riskMap) extend() riskMap {
 		for tileX := 0; tileX < 5; tileX++ {
 			for y, row := range r {
 				for x, risk := range row {
-					extended[tileY*len(r)+y][tileX*len(r[0])+x] = risk + uint8(tileX) + uint8(tileY)
+					extended[tileY*len(r)+y][tileX*len(r[0])+x] = (risk + uint8(tileX) + uint8(tileY))
+					if extended[tileY*len(r)+y][tileX*len(r[0])+x] >= 10 {
+						extended[tileY*len(r)+y][tileX*len(r[0])+x] -= 9
+					}
 				}
 			}
 		}
@@ -197,28 +200,36 @@ func (r riskMap) dijkstrasPriority() uint {
 
 	dist[coord{y: 0, x: 0}] = 0
 	i := 0
+	unvisited := make(map[coord]struct{})
+	// indexes := make(map[coord]int)
+	// prio := math.MaxUint32
 	for y, row := range r {
 		for x := range row {
 			coord := coord{x: x, y: y}
-			if x != 0 && y != 0 {
+			if !(x == 0 && y == 0) {
 				dist[coord] = math.MaxUint32
 			}
+			unvisited[coord] = struct{}{}
 			q[i] = &Item{
 				value:    coord,
 				priority: int(dist[coord]),
 				index:    i,
 			}
+			// indexes[coord] = i
 			i++
 		}
 	}
 	heap.Init(&q)
+	// prio--
 
 	for len(q) > 0 {
 		u := heap.Pop(&q).(*Item)
 		uNode := u.value
 
+		delete(unvisited, uNode)
+
 		prevNode := prev[uNode]
-		if prevNode.x != 0 && prevNode.y != 0 && uNode.x == len(r[0])-1 && uNode.y == len(r)-1 {
+		if !(prevNode.x == 0 && prevNode.y == 0) && uNode.x == len(r[0])-1 && uNode.y == len(r)-1 {
 			var totalCost uint = 0
 			for !(uNode.x == 0 && uNode.y == 0) {
 				fmt.Printf("%d (%d,%d) prev %v\n", uint(r[uNode.y][uNode.x]), uNode.x, uNode.y, prev[uNode])
@@ -228,12 +239,23 @@ func (r riskMap) dijkstrasPriority() uint {
 			return totalCost
 		}
 
-		for _, neighbor := range r.neighbors(u.value) {
-			alt := dist[u.value] + uint(r[neighbor.y][neighbor.x])
+		for _, neighbor := range r.neighbors(uNode) {
+			_, isUnvisited := unvisited[neighbor]
+			if !isUnvisited {
+				continue
+			}
+			alt := dist[uNode] + uint(r[neighbor.y][neighbor.x])
 			if alt < dist[neighbor] {
+
 				dist[neighbor] = alt
-				prev[neighbor] = u.value
-				q.update(u, u.value, u.priority-1)
+				prev[neighbor] = uNode
+				for _, node := range q {
+					if node.value.x == neighbor.x && node.value.y == neighbor.y {
+						q.update(node, node.value, node.priority-1)
+						break
+					}
+				}
+				// neighborNode := q[indexes[neighbor]]
 			}
 		}
 	}
