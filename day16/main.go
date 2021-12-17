@@ -45,23 +45,25 @@ func versionSum(s string) int {
 	offsetSum := 0
 	lastOffset := 0
 	for offsetSum < len(s)-3 {
-		bitsPackage, offset := parseNextPackage(s[lastOffset:])
+		_, offset, sum := parseNextPackage(s[lastOffset:])
 		// fmt.Printf("%d - %d\n", offset, len(s))
 		offsetSum += offset
-		versionSum += bitsPackage.version
-		offset2 := offset
-		if offset2%4 != 0 {
-			offset2 += 4 - offset2%4
-		}
-		lastOffset = offset2
+		versionSum += sum
+		// offset2 := offset
+		// if offset2%4 != 0 {
+		// 	offset2 += 4 - offset2%4
+		// }
+		lastOffset = offset
 	}
 	return versionSum
 }
 
-func parseNextPackage(s string) (bitsPackage, int) {
+func parseNextPackage(s string) (bitsPackage, int, int) {
 	version, _ := strconv.ParseUint(s[0:3], 2, 8)
 	typeID, _ := strconv.ParseUint(s[3:6], 2, 8)
 	var endOffset int
+
+	versionSum := int(version)
 
 	switch typeID {
 	case 4: // Literal value.
@@ -82,19 +84,22 @@ func parseNextPackage(s string) (bitsPackage, int) {
 			length, _ := strconv.ParseUint(s[7:22], 2, 16)
 			// subpackageOffsets := 0
 			for subpackageOffset < int(length) {
-				_, offset := parseNextPackage(s[22:])
+				_, offset, sum := parseNextPackage(s[22+subpackageOffset:])
+				versionSum += sum
 				subpackageOffset += offset
 			}
+			endOffset = 22 + subpackageOffset
 		case '1': // Packet type.
 			numberOfSubpackets, _ := strconv.ParseUint(s[7:18], 2, 16)
 			count := 0
 			for count < int(numberOfSubpackets) {
-				_, offset := parseNextPackage(s[22:])
+				_, offset, sum := parseNextPackage(s[18+subpackageOffset:])
+				versionSum += sum
 				subpackageOffset += offset
 				count++
 			}
+			endOffset = 18 + subpackageOffset
 		}
-		endOffset = 22 + subpackageOffset
 		// if endOffset%4 != 0 {
 		// 	endOffset += 4 - endOffset%4
 		// }
@@ -106,7 +111,7 @@ func parseNextPackage(s string) (bitsPackage, int) {
 	return bitsPackage{
 		version: int(version),
 		typeID:  int(typeID),
-	}, endOffset
+	}, endOffset, versionSum
 }
 
 type bitsPackage struct {
